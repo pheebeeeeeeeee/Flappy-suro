@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flappy Rabbit</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #70c5ce;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #70c5ce;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const ctx = canvas.getContext('2d');
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});('2d');
+
+    // Load rabbit image
+    const rabbit = new Image();
+    rabbit.src = 'rabbit.png'; // Replace with your image path
+
+    let rabbitX = 50;
+    let rabbitY = 150;
+    let gravity = 0.4;
+    let velocity = 0;
+    let lift = -7;
+
+    let pipes = [];
+    const pipeWidth = 50;
+    const gap = 140;
+
+    function createPipe() {
+      let top = Math.random() * (canvas.height - gap - 100) + 20;
+      pipes.push({ x: canvas.width, top: top, bottom: top + gap });
+    }
+
+    function update() {
+      velocity += gravity;
+      rabbitY += velocity;
+
+      if (rabbitY + 24 > canvas.height) {
+        resetGame();
+      }
+
+      pipes.forEach(pipe => {
+        pipe.x -= 2;
+        if (pipe.x + pipeWidth < 0) {
+          pipes.shift();
+        }
+
+        if (
+          rabbitX < pipe.x + pipeWidth &&
+          rabbitX + 34 > pipe.x &&
+          (rabbitY < pipe.top || rabbitY + 24 > pipe.bottom)
+        ) {
+          resetGame();
+        }
+      });
+
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+        createPipe();
+      }
+
+      draw();
+      requestAnimationFrame(update);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      pipes.forEach(pipe => {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
+      });
+
+      ctx.drawImage(rabbit, rabbitX, rabbitY, 34, 24);
+    }
+
+    function resetGame() {
+      rabbitY = 150;
+      velocity = 0;
+      pipes = [];
+    }
+
+    window.addEventListener('keydown', () => {
+  velocity = lift;
+});
+
+// Mobile touch control
+window.addEventListener('touchstart', () => {
+  velocity = lift;
+});
+
+    rabbit.onload = () => {
+      update();
+    };
+  </script>
+</body>
+</html>
