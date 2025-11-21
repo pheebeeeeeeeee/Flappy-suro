@@ -9,16 +9,51 @@
       margin: 0;
       overflow: hidden;
       background: #70c5ce;
+      font-family: Arial, sans-serif;
     }
     canvas {
       display: block;
       margin: 0 auto;
       background: #70c5ce;
     }
+
+    /* Name Input Screen */
+    #nameScreen {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #nameBox {
+      padding: 10px 20px;
+      font-size: 22px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+    }
+    #startBtn {
+      margin-top: 15px;
+      padding: 10px 25px;
+      font-size: 22px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+
+  <!-- 🎮 Player Name Screen -->
+  <div id="nameScreen">
+    <input id="nameBox" placeholder="Enter your name…" />
+    <button id="startBtn">Start Game</button>
+  </div>
+
   <canvas id="gameCanvas"></canvas>
+
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -47,19 +82,35 @@
     // Pipes
     let pipes = [];
     const pipeWidth = 60;
-    const gap = 220; // increased gap
+    const gap = 220;
 
     // Game states
     let gameStarted = false;
     let gameOver = false;
     let score = 0;
 
-    // High score saved permanently
-    let highScore = localStorage.getItem("flappyRabbitHighScore") || 0;
+    // Player name + high score
+    let playerName = "";
+    let highScore = 0;
 
-    function createPipe() {
+    function loadHighScore() {
+      let key = "flappyRabbitHighScore_" + playerName;
+      highScore = Number(localStorage.getItem(key)) || 0;
+    }
+
+    function saveHighScore() {
+      let key = "flappyRabbitHighScore_" + playerName;
+      localStorage.setItem(key, highScore);
+    }
+
+    function createPipe(first = false) {
       let top = Math.random() * (canvas.height - gap - 100) + 20;
-      pipes.push({ x: canvas.width, top: top, bottom: top + gap });
+
+      pipes.push({
+        x: first ? canvas.width - 100 : canvas.width,
+        top: top,
+        bottom: top + gap
+      });
     }
 
     function resetGame() {
@@ -69,6 +120,9 @@
       score = 0;
       gameOver = false;
       gameStarted = false;
+
+      // 🟡 first pipe closer
+      createPipe(true);
     }
 
     function update() {
@@ -80,22 +134,19 @@
       velocity += gravity;
       rabbitY += velocity;
 
-      // Floor collision
       if (rabbitY + RABBIT_HEIGHT > canvas.height) {
         gameOver = true;
       }
 
       pipes.forEach((pipe, index) => {
-        pipe.x -= 1.5; // slower speed
+        pipe.x -= 1.5;
 
         // Score
         if (pipe.x + pipeWidth === rabbitX) {
           score++;
-
-          // HIGH SCORE UPDATE
           if (score > highScore) {
             highScore = score;
-            localStorage.setItem("flappyRabbitHighScore", highScore);
+            saveHighScore();
           }
         }
 
@@ -113,7 +164,8 @@
         }
       });
 
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 250) {
+      // More space before *second* pipe
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
         createPipe();
       }
 
@@ -124,40 +176,38 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw pipes
+      // Pipes
       ctx.fillStyle = "green";
       pipes.forEach(pipe => {
         ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
         ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
       });
 
-      // Draw rabbit
+      // Rabbit
       ctx.drawImage(rabbit, rabbitX, rabbitY, RABBIT_WIDTH, RABBIT_HEIGHT);
 
-      // Score
+      // Score UI
       ctx.fillStyle = "white";
       ctx.font = "40px Arial";
       ctx.fillText(score, 20, 50);
 
-      // High score
       ctx.fillStyle = "yellow";
-      ctx.font = "30px Arial";
-      ctx.fillText("High: " + highScore, 20, 90);
+      ctx.font = "28px Arial";
+      ctx.fillText("High (" + playerName + "): " + highScore, 20, 90);
 
-      // Start screen
+      // Start text
       if (!gameStarted && !gameOver) {
         ctx.font = "60px Arial";
         ctx.fillStyle = "white";
         ctx.fillText("Tap to Start", canvas.width / 2 - 150, canvas.height / 2);
       }
 
-      // Game Over
+      // Game over
       if (gameOver) {
         ctx.font = "60px Arial";
         ctx.fillStyle = "red";
         ctx.fillText("You killed Suro!", canvas.width / 2 - 200, canvas.height / 2);
 
-        // New High Score message
         if (score == highScore) {
           ctx.fillStyle = "yellow";
           ctx.font = "40px Arial";
@@ -166,11 +216,10 @@
 
         ctx.font = "40px Arial";
         ctx.fillStyle = "white";
-        ctx.fillText("Tap to restart", canvas.width / 2 - 130, canvas.height / 2 + 60);
+        ctx.fillText("Tap to restart", canvas.width / 2 - 130, canvas.height / 2 + 70);
       }
     }
 
-    // Controls
     function flap() {
       if (!gameStarted) {
         gameStarted = true;
@@ -186,6 +235,7 @@
     window.addEventListener("touchstart", flap);
 
     rabbit.onload = () => draw();
-  </script>
-</body>
-</html>
+
+    // 🟦 NAME ENTRY HANDLING
+    document.getElementById("startBtn").onclick = () => {
+      let nameInput = docu
